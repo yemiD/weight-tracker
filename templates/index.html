@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weight Tracker — Systems Archive</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Inter:wght@400;900&display=swap" rel="stylesheet">
+
+  <style>[x-cloak] { display: none !important; }</style>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'base-white':    '#FAFAFA',
+            'surface-pure':  '#FFFFFF',
+            'surface-muted': '#F0F0F0',
+            'stroke-soft':   '#E5E5E5',
+            'stroke-strong': '#111111',
+            'accent-pop':    '#0066FF',
+            'text-main':     '#111111',
+            'text-muted':    '#666666',
+          },
+          fontFamily: {
+            sans: ['Inter', 'ui-sans-serif', 'system-ui'],
+            mono: ['IBM Plex Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <script src="https://unpkg.com/htmx.org@2.0.3"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+
+<body class="bg-base-white text-text-main antialiased font-sans flex min-h-screen">
+
+  <!-- ── Sidebar ─────────────────────────────────────────────── -->
+  <aside class="w-64 bg-surface-pure border-r border-stroke-soft p-8 flex-shrink-0 flex flex-col gap-8 min-h-screen">
+
+    <!-- App identity -->
+    <div>
+      <p class="font-mono text-[9px] uppercase tracking-widest text-text-muted font-bold">Systems Archive</p>
+      <p class="font-sans text-xl font-black tracking-tight text-text-main mt-1">Weight</p>
+    </div>
+
+    <div class="h-[1px] bg-stroke-soft"></div>
+
+    <!-- Goal weight -->
+    <div>
+      <p class="font-mono text-[10px] uppercase tracking-widest text-text-muted font-bold mb-4">Goal</p>
+      <label class="block font-mono text-[10px] uppercase tracking-widest text-text-muted mb-2">Target (kg)</label>
+      <input
+        type="number"
+        name="goal"
+        id="goal-input"
+        value="{{ goal }}"
+        step="0.5"
+        class="w-full border border-stroke-soft bg-base-white px-3 py-2 text-sm text-text-main font-sans focus:outline-none focus:border-accent-pop focus:ring-1 focus:ring-accent-pop"
+        hx-get="/metrics"
+        hx-target="#metrics"
+        hx-swap="innerHTML"
+        hx-trigger="change"
+        hx-include="#goal-input"
+      >
+    </div>
+
+    <div class="h-[1px] bg-stroke-soft"></div>
+
+    <!-- Log entry form -->
+    <div x-data="{ saved: false }">
+      <p class="font-mono text-[10px] uppercase tracking-widest text-text-muted font-bold mb-4">Log Entry</p>
+      <form
+        hx-post="/log"
+        hx-target="#metrics"
+        hx-swap="innerHTML"
+        hx-include="#goal-input"
+        hx-on:htmx:after-request="saved = true; $el.reset(); setTimeout(() => saved = false, 2500)"
+        class="flex flex-col gap-4"
+      >
+        <div>
+          <label class="block font-mono text-[10px] uppercase tracking-widest text-text-muted mb-2">Date</label>
+          <input
+            type="date"
+            name="date"
+            value="{{ today }}"
+            class="w-full border border-stroke-soft bg-base-white px-3 py-2 text-sm text-text-main font-sans focus:outline-none focus:border-accent-pop focus:ring-1 focus:ring-accent-pop"
+          >
+        </div>
+
+        <div>
+          <label class="block font-mono text-[10px] uppercase tracking-widest text-text-muted mb-2">Weight (kg)</label>
+          <input
+            type="number"
+            name="weight"
+            step="0.1"
+            min="0"
+            placeholder="0.0"
+            class="w-full border border-stroke-soft bg-base-white px-3 py-2 text-sm text-text-main font-sans focus:outline-none focus:border-accent-pop focus:ring-1 focus:ring-accent-pop"
+          >
+        </div>
+
+        <button
+          type="submit"
+          class="w-full bg-accent-pop text-white font-mono text-[10px] uppercase tracking-widest font-bold py-3 px-4 transition-all hover:bg-stroke-strong"
+        >
+          Save Entry
+        </button>
+
+        <p x-show="saved" x-cloak class="font-mono text-[10px] uppercase tracking-widest text-accent-pop text-center">
+          ✓ Saved
+        </p>
+      </form>
+    </div>
+
+  </aside>
+
+  <!-- ── Main ───────────────────────────────────────────────── -->
+  <main class="flex-1 p-8 md:p-12 bg-base-white flex flex-col gap-12">
+
+    <!-- Page header -->
+    <header>
+      <div class="flex items-center gap-2 mb-6">
+        <div class="w-8 h-[1px] bg-accent-pop"></div>
+        <span class="font-mono text-[10px] tracking-widest text-accent-pop uppercase font-bold">Daily Log</span>
+      </div>
+      <h1 class="font-sans text-5xl font-black tracking-tight text-text-main mb-4">
+        Daily Tracker <span class="text-text-muted italic font-serif">at a glance.</span>
+      </h1>
+      <p class="max-w-lg text-text-muted text-lg leading-relaxed font-sans">
+        Weight logged daily. Trend calculated via exponential moving average.
+      </p>
+    </header>
+
+    <!-- Metrics — HTMX swap target (pt-6 gives room for the bleeding chips) -->
+    <div id="metrics" class="pt-6">
+      {% include "partials/metrics.html" %}
+    </div>
+
+    <!-- Chart -->
+    <div>
+      <!-- Section eyebrow -->
+      <div class="flex items-center gap-2 mb-6">
+        <div class="w-8 h-[1px] bg-stroke-strong"></div>
+        <span class="font-mono text-[10px] tracking-widest text-text-muted uppercase font-bold">Progress</span>
+      </div>
+
+      <!-- Chart card -->
+      <div class="bg-surface-pure border border-stroke-soft p-8">
+        <div
+          x-data="weightChart()"
+          x-init="init()"
+          @chart-refresh.window="refresh()"
+        >
+          <canvas x-ref="canvas"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+  function fmtDate(str) {
+    const [y, m, d] = str.split('-').map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+
+  function yBounds(weights) {
+    const min = Math.min(...weights);
+    const max = Math.max(...weights);
+    const pad = Math.max((max - min) * 0.15, 1.5);
+    return { min: Math.floor(min - pad), max: Math.ceil(max + pad) };
+  }
+
+  function weightChart() {
+    return {
+      chart: null,
+
+      async init() {
+        const data = await fetch('/api/data').then(r => r.json());
+        const bounds = data.weights.length ? yBounds(data.weights) : { min: 60, max: 100 };
+
+        this.chart = new Chart(this.$refs.canvas, {
+          type: 'line',
+          data: {
+            labels: data.dates,
+            datasets: [
+              {
+                label: 'Weight',
+                data: data.weights,
+                borderColor: 'transparent',
+                backgroundColor: '#111111',
+                pointBackgroundColor: '#111111',
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                showLine: false,
+              },
+              {
+                label: 'Trend (EMA)',
+                data: data.trend,
+                borderColor: '#0066FF',
+                borderWidth: 2,
+                pointRadius: 0,
+                tension: 0.3,
+                fill: false,
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            interaction: { mode: 'index', intersect: false },
+            scales: {
+              x: {
+                ticks: {
+                  color: '#666666',
+                  font: { family: 'IBM Plex Mono', size: 10 },
+                  maxTicksLimit: 10,
+                  maxRotation: 0,
+                  callback: function(value) {
+                    return fmtDate(this.getLabelForValue(value));
+                  }
+                },
+                grid: { color: '#E5E5E5' },
+                border: { color: '#E5E5E5' },
+              },
+              y: {
+                min: bounds.min,
+                max: bounds.max,
+                ticks: {
+                  color: '#666666',
+                  font: { family: 'IBM Plex Mono', size: 10 },
+                  callback: v => v + ' kg',
+                },
+                grid: { color: '#E5E5E5' },
+                border: { color: '#E5E5E5' },
+              }
+            },
+            plugins: {
+              legend: {
+                labels: {
+                  color: '#666666',
+                  font: { family: 'IBM Plex Mono', size: 10 },
+                  boxWidth: 10,
+                  padding: 16,
+                }
+              },
+              tooltip: {
+                backgroundColor: '#FFFFFF',
+                borderColor: '#E5E5E5',
+                borderWidth: 1,
+                titleColor: '#111111',
+                titleFont: { family: 'IBM Plex Mono', size: 10, weight: 'bold' },
+                bodyColor: '#666666',
+                bodyFont: { family: 'IBM Plex Mono', size: 10 },
+                callbacks: {
+                  title: items => fmtDate(items[0].label),
+                  label: item => ` ${item.dataset.label}: ${item.formattedValue} kg`,
+                }
+              }
+            }
+          }
+        });
+      },
+
+      async refresh() {
+        const data = await fetch('/api/data').then(r => r.json());
+        const bounds = data.weights.length ? yBounds(data.weights) : { min: 60, max: 100 };
+        this.chart.data.labels = data.dates;
+        this.chart.data.datasets[0].data = data.weights;
+        this.chart.data.datasets[1].data = data.trend;
+        this.chart.options.scales.y.min = bounds.min;
+        this.chart.options.scales.y.max = bounds.max;
+        this.chart.update();
+      }
+    }
+  }
+  </script>
+
+</body>
+</html>

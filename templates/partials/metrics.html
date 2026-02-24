@@ -1,0 +1,58 @@
+{% if metrics %}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+  <!-- Current Weight -->
+  <div class="relative bg-surface-pure border border-stroke-soft p-8 pt-10">
+    <div class="absolute -top-3 left-6 bg-accent-pop text-white font-mono text-[9px] px-2 py-1 font-bold uppercase tracking-widest">
+      Weight
+    </div>
+    <div class="flex items-baseline gap-1 mb-3">
+      <span class="text-4xl font-black tracking-tight text-text-main">{{ "%.1f"|format(metrics.current_weight) }}</span>
+      <span class="text-lg font-black text-text-muted">kg</span>
+    </div>
+    <p class="font-mono text-[10px] uppercase tracking-widest {{ 'text-text-main' if metrics.weight_change < 0 else 'text-text-muted' }}">
+      {{ "%+.1f"|format(metrics.weight_change) }} kg &nbsp;·&nbsp; {{ metrics.days_diff }}d lookback
+    </p>
+  </div>
+
+  <!-- Weekly Speed -->
+  <div class="relative bg-surface-pure border border-stroke-soft p-8 pt-10">
+    <div class="absolute -top-3 left-6 bg-accent-pop text-white font-mono text-[9px] px-2 py-1 font-bold uppercase tracking-widest">
+      Speed
+    </div>
+    <div class="flex items-baseline gap-1 mb-3">
+      <span class="text-4xl font-black tracking-tight text-text-main">{{ "%+.2f"|format(metrics.true_weekly_rate) }}</span>
+      <span class="text-lg font-black text-text-muted">kg/wk</span>
+    </div>
+    <p class="font-mono text-[10px] uppercase tracking-widest text-text-muted">
+      Calculated over {{ metrics.days_diff }} days
+    </p>
+  </div>
+
+  <!-- Projection -->
+  <div class="relative bg-surface-pure border border-stroke-soft p-8 pt-10">
+    <div class="absolute -top-3 left-6 bg-accent-pop text-white font-mono text-[9px] px-2 py-1 font-bold uppercase tracking-widest">
+      ETA
+    </div>
+    {% if metrics.projection_status == "reached" %}
+      <p class="text-4xl font-black tracking-tight text-text-main mb-3">Goal!</p>
+      <p class="font-mono text-[10px] uppercase tracking-widest text-text-muted">Target reached</p>
+    {% elif metrics.projection %}
+      <div class="flex items-baseline gap-1 mb-3">
+        <span class="text-4xl font-black tracking-tight text-text-main">{{ metrics.projection.date }}</span>
+      </div>
+      <p class="font-mono text-[10px] uppercase tracking-widest text-text-muted">
+        {{ metrics.projection.weeks }} weeks away
+      </p>
+    {% else %}
+      <p class="text-4xl font-black tracking-tight text-text-main mb-3">—</p>
+      <p class="font-mono text-[10px] uppercase tracking-widest text-text-muted">No downward trend</p>
+    {% endif %}
+  </div>
+
+</div>
+{% else %}
+<div class="bg-surface-pure border border-stroke-soft p-8">
+  <p class="font-mono text-[10px] uppercase tracking-widest text-text-muted">No data — log your first entry to begin.</p>
+</div>
+{% endif %}

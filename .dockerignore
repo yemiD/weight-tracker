@@ -1,0 +1,7 @@
+credentials.json
+weight.db
+app.py
+__pycache__
+*.pyc
+.git
+.github
