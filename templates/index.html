@@ -173,11 +173,12 @@
     return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
 
-  function yBounds(weights) {
-    const min = Math.min(...weights);
-    const max = Math.max(...weights);
+  function yBounds(weights, trend) {
+    const all = weights.concat(trend || []);
+    const min = Math.min(...all);
+    const max = Math.max(...all);
     const pad = Math.max((max - min) * 0.15, 1.5);
-    return { min: Math.floor(min - pad), max: Math.ceil(max + pad) };
+    return { min: Math.round((min - pad) * 2) / 2, max: Math.round((max + pad) * 2) / 2 };
   }
 
   function weightChart() {
@@ -186,7 +187,7 @@
 
       async init() {
         const data = await fetch('/api/data').then(r => r.json());
-        const bounds = data.weights.length ? yBounds(data.weights) : { min: 60, max: 100 };
+        const bounds = data.weights.length ? yBounds(data.weights, data.trend) : { min: 60, max: 100 };
 
         this.chart = new Chart(this.$refs.canvas, {
           type: 'line',
@@ -232,12 +233,12 @@
                 border: { color: '#E5E5E5' },
               },
               y: {
-                min: bounds.min,
-                max: bounds.max,
+                suggestedMin: bounds.min,
+                suggestedMax: bounds.max,
                 ticks: {
                   color: '#666666',
                   font: { family: 'IBM Plex Mono', size: 10 },
-                  callback: v => v + ' kg',
+                  callback: v => (Number.isInteger(v) ? v : v.toFixed(1)) + ' kg',
                 },
                 grid: { color: '#E5E5E5' },
                 border: { color: '#E5E5E5' },
@@ -272,12 +273,12 @@
 
       async refresh() {
         const data = await fetch('/api/data').then(r => r.json());
-        const bounds = data.weights.length ? yBounds(data.weights) : { min: 60, max: 100 };
+        const bounds = data.weights.length ? yBounds(data.weights, data.trend) : { min: 60, max: 100 };
         this.chart.data.labels = data.dates;
         this.chart.data.datasets[0].data = data.weights;
         this.chart.data.datasets[1].data = data.trend;
-        this.chart.options.scales.y.min = bounds.min;
-        this.chart.options.scales.y.max = bounds.max;
+        this.chart.options.scales.y.suggestedMin = bounds.min;
+        this.chart.options.scales.y.suggestedMax = bounds.max;
         this.chart.update();
       }
     }

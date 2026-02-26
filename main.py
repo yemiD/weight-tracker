@@ -123,7 +123,7 @@ async def log_entry(
         "request": request,
         "metrics": compute_metrics(goal),
     })
-    response.headers["HX-Trigger"] = "chartRefresh"
+    response.headers["HX-Trigger"] = "chart-refresh"
     return response
 
 
