@@ -1,7 +1,5 @@
-version: '3.8'
-
 services:
-  app:
+  weight-tracker:
     image: yemid/weight-tracker:latest
     ports:
       - "8001:8001"
