@@ -4,7 +4,7 @@ services:
     ports:
       - "8001:8001"
     volumes:
-      - weight_data:/data
+      - ./weight.db:/data/weight.db
     restart: unless-stopped
 
   watchtower:
@@ -14,5 +14,3 @@ services:
     command: --interval 300
     restart: unless-stopped
 
-volumes:
-  weight_data:
